@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drawing Game</title>
+  <style>
+    /* พื้นฐานของหน้าเว็บ */
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #6a82fb, #fc5c7d);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #game-container {
+      display: flex;
+      flex-direction: column;
+      width: 900px;
+      max-width: 90%;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #drawingCanvas {
+      border: 2px solid #3e3e3e;
+      background-color: #fff;
+      margin: 0;
+      padding: 0;
+      border-radius: 15px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      height: 100%;
+    }
+
+    #controls {
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      background: #333;
+      color: white;
+      gap: 15px;
+      width: 230px;
+      box-shadow: 5px 0 20px rgba(0, 0, 0, 0.3);
+      border-radius: 15px;
+    }
+
+    #controls button,
+    #controls input {
+      padding: 12px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.3s ease-in-out;
+    }
+
+    #controls button {
+      background-color: #6a82fb;
+      color: white;
+    }
+
+    #controls button:hover {
+      background-color: #fc5c7d;
+      transform: scale(1.1);
+    }
+
+    #controls input[type="color"],
+    #controls input[type="range"] {
+      background-color: #fff;
+      border: 1px solid #ccc;
+    }
+
+    #controls #timer {
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 20px;
+      padding: 12px;
+      background: #222;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    #task-container {
+      text-align: center;
+      background: #222;
+      color: white;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: bold;
+      border-radius: 20px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    /* เพิ่มแอนิเมชั่น fadeIn สำหรับข้อความที่แสดง */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    #game-container {
+      animation: fadeIn 1s ease-out;
+    }
+
+    /* การตกแต่งหน้าจอจบเกม */
+    #endScreen {
+      display: none;
+      background: #222;
+      color: white;
+      text-align: center;
+      padding: 40px;
+      font-size: 30px;
+      font-weight: bold;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      width: 60%;
+      max-width: 600px;
+      margin: auto;
+      animation: fadeIn 1s ease-out;
+    }
+
+    #endScreen button {
+      background-color: #6a82fb;
+      color: white;
+      font-size: 20px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      outline: none;
+      margin-top: 20px;
+      transition: background-color 0.3s ease;
+    }
+
+    #endScreen button:hover {
+      background-color: #fc5c7d;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- โจทย์วาด -->
+    <div id="task-container">
+      กระดานวาดภาพ
+    </div>
+
+    <div style="display: flex;">
+      <!-- ส่วนควบคุม -->
+      <div id="controls">
+        <button id="clearButton">🧹 ล้างกระดาน</button>
+        <button id="eraserButton">Eraser</button> 
+        <label>
+          🎨 สีแปรง: 
+          <input type="color" id="colorPicker" value="#000000">
+        </label>
+        <label>
+          ✏️ ขนาดแปรง: 
+          <input type="range" id="brushSize" min="1" max="15" value="5">
+        </label>
+        <button id="penButton">✒️ ใช้ปากกา</button>
+        <div id="timer">⏳ เวลา: 120s</div>
+      </div>
+
+      <!-- พื้นที่วาด -->
+      <canvas id="drawingCanvas"></canvas>
+    </div>
+  </div>
+  <div id="game-container">
+    <!-- แสดงโจทย์รูปภาพแบบสุ่ม -->
+    <div id="task-container">
+      <p>โจทย์วาดภาพ:</p>
+      <img id="drawingTaskImage" src="" alt="กำลังสุ่ม...">
+    </div>
+  <!-- หน้าจอจบเกม -->
+  <div id="endScreen">
+    🎉 เกมจบแล้ว! 🎉
+    <br>หมดเวลา!
+    <br>
+    <button id="restartButton">เริ่มใหม่</button>
+    <button id="saveButton">💾 บันทึกภาพ</button>
+  </div>
+  
+  
+  <script>
+    const canvas = document.getElementById("drawingCanvas");
+    const ctx = canvas.getContext("2d");
+    let isErasing = false; // ตรวจสอบสถานะการใช้ยางลบ
+
+// เพิ่มการทำงานของปุ่มยางลบ
+document.getElementById("eraserButton").addEventListener("click", () => {
+  isErasing = !isErasing;
+  document.getElementById("eraserButton").innerText = isErasing ? "✏️ ใช้แปรง" : "Eraser";
+  alert(isErasing ? "ใช้ยางลบเรียบร้อย" : "กลับไปใช้แปรงเรียบร้อย");
+});
+
+// แก้ไขการวาดให้รองรับยางลบ
+canvas.addEventListener("mousemove", (event) => {
+  if (isDrawing) {
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (isErasing) {
+      ctx.globalCompositeOperation = "destination-out"; // โหมดลบ
+      ctx.strokeStyle = "rgba(0,0,0,1)"; // สีโปร่งใส
+    } else {
+      ctx.globalCompositeOperation = "source-over"; // โหมดวาดปกติ
+      ctx.strokeStyle = brushColor;
+    }
+
+    ctx.lineTo(event.offsetX, event.offsetY);
+    ctx.stroke();
+  }
+});
+    // ตั้งขนาดของ canvas ให้พอดีกับพื้นที่ที่มี
+    function resizeCanvas() {
+      // คำนวณขนาดของ canvas ให้เต็มขอบของ #game-container
+      const container = document.getElementById("game-container");
+      const containerWidth = container.clientWidth - 20; // ลด margin ที่กำหนดให้
+      const containerHeight = container.clientHeight - 20;
+      canvas.width = containerWidth;
+      canvas.height = containerHeight;
+    }
+
+    window.addEventListener("resize", resizeCanvas); // ปรับขนาด canvas เมื่อขนาดหน้าต่างเปลี่ยน
+
+    resizeCanvas(); // ปรับขนาด canvas เมื่อโหลดหน้า
+
+    let isDrawing = false;
+    let brushColor = "#000000";
+    let brushSize = 5;
+    let isPen = false; // ตรวจสอบสถานะการใช้ปากกา
+    let timeLeft = 120; // เริ่มต้นเวลา
+    let timerInterval;
+
+    // รายการโจทย์วาด (ภาษาไทย)
+        // อาร์เรย์ของรูปภาพโจทย์ (เปลี่ยนเป็นชื่อไฟล์ภาพที่คุณมี)
+        const imageTasks = [
+      "OIP (1).jpg",
+      "OIP (2).jpg",
+      "OIP (3).jpg",
+      "OIP.jpg",
+      "depositphotos_97688478-stock-illustration-simple-cartoon-of-a-cute.jpg",
+      "depositphotos_97688452-stock-illustration-simple-cartoon-of-a-cute.jpg",
+      
+    ];
+
+    // ฟังก์ชันสุ่มเลือกภาพโจทย์
+    function getRandomImageTask() {
+      const randomIndex = Math.floor(Math.random() * imageTasks.length);
+      return imageTasks[randomIndex];
+    }
+
+    // ตั้งค่าภาพโจทย์เริ่มต้น
+    document.getElementById("drawingTaskImage").src = getRandomImageTask();
+
+    // เริ่มการวาด
+    canvas.addEventListener("mousedown", (event) => {
+      isDrawing = true;
+      ctx.beginPath();
+      ctx.moveTo(event.offsetX, event.offsetY);
+    });
+
+    canvas.addEventListener("mouseup", () => (isDrawing = false));
+
+    canvas.addEventListener("mousemove", (event) => {
+      if (isDrawing) {
+        ctx.strokeStyle = brushColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineTo(event.offsetX, event.offsetY);
+        ctx.stroke();
+      }
+    });
+
+    // ล้างกระดาน
+    document.getElementById("clearButton").addEventListener("click", () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // เปลี่ยนสีแปรง
+    document.getElementById("colorPicker").addEventListener("input", (e) => {
+      brushColor = e.target.value;
+    });
+
+    // เปลี่ยนขนาดแปรง
+    document.getElementById("brushSize").addEventListener("input", (e) => {
+      brushSize = e.target.value;
+    });
+
+    // ฟังก์ชันจับเวลา
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          document.getElementById("timer").innerText = `⏳ เวลา: ${timeLeft}s`;
+        } else {
+          clearInterval(timerInterval);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    // ฟังก์ชันจบเกม
+    function endGame() {
+      document.getElementById("game-container").style.display = "none";
+      document.getElementById("endScreen").style.display = "block";
+    }
+
+    // เริ่มจับเวลาเมื่อโหลดหน้า
+    window.onload = startTimer;
+
+    // ใช้ปากกา/แปรง
+    document.getElementById("penButton").addEventListener("click", () => {
+      isPen = !isPen;
+      document.getElementById("penButton").innerText = isPen ? "✏️ ใช้แปรง" : "✒️ ใช้ปากกา";
+      alert(isPen ? "ใช้ปากกาเรียบร้อย" : "กลับไปใช้แปรงเรียบร้อย");
+    });
+
+    // เริ่มใหม่
+    document.getElementById("restartButton").addEventListener("click", () => {
+      location.reload(); // รีเฟรชหน้าเว็บเพื่อเริ่มใหม่
+    });
+    // ฟังก์ชันบันทึกภาพจาก canvas
+document.getElementById("saveButton").addEventListener("click", () => {
+  const dataURL = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = dataURL;
+  a.download = "drawing.png"; // ชื่อไฟล์ที่บันทึก
+  a.click();
+});
+
+  </script>
+ 
+
+</body>
+</html>
